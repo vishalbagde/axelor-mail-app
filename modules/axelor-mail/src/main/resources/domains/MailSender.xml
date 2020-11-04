@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<domain-models
+  xmlns="http://axelor.com/xml/ns/domain-models"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/domain-models http://axelor.com/xml/ns/domain-models/domain-models_5.1.xsd">
+
+  <module package="com.axelor.mail.db" name="mail" />
+  <entity name="MailSender">
+
+    <string name="reference" title="Reference" namecolumn="true" />
+    <string name="cc" title="CC" />
+    <string name="subject" title="Subject" />
+    <string name="body" title="Body" />
+    <one-to-many name="candidateList"
+      ref="com.axelor.mail.db.Candidate" title="Sender List"
+      mappedBy="mailSender" />
+  </entity>
+</domain-models>

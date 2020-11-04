@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object-views xmlns="http://axelor.com/xml/ns/object-views"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/object-views http://axelor.com/xml/ns/object-views/object-views_5.1.xsd">
+
+  <!-- Main Menu Event Module -->
+  <menuitem name="menu-mail-main-module" title="Mail Server"
+    icon-background="green" />
+
+  <menuitem name="menu-mail-main-all" parent="menu-mail-main-module"
+    title="Mail Sender" action="menu.action.mail.sender.main.view.all" />
+
+  <action-view name="menu.action.mail.sender.main.view.all" title="Mail Sender"
+    model="com.axelor.mail.db.MailSender">
+    <view type="grid" name="mail-sender-grid" />
+    <view type="form" name="mail-sender-form" />
+  </action-view>
+
+  <menuitem name="menu-mail-main-re-all" parent="menu-mail-main-module"
+    title="Sender Details" action="menu.action.mail.candidate.view.all" />
+
+  <action-view name="menu.action.mail.candidate.view.all"
+    title="Mail Candidate" model="com.axelor.mail.db.Candidate">
+    <view type="grid" name="candidate-grid" />
+    <view type="form" name="candidate-form" />
+  </action-view>
+
+
+</object-views>

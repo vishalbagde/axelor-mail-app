@@ -51,28 +51,27 @@ import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
 import javax.mail.MessagingException;
+import javax.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MessageServiceImpl extends JpaSupport implements MessageService {
+
   private final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private MetaAttachmentRepository metaAttachmentRepository;
   protected MessageRepository messageRepository;
-
-  private ExecutorService executor = Executors.newCachedThreadPool();
-  private static final int ENTITY_FIND_TIMEOUT = 10000;
-  private static final int ENTITY_FIND_INTERVAL = 200;
+  protected SendMailQueueService sendMailQueueService;
 
   @Inject
   public MessageServiceImpl(
-      MetaAttachmentRepository metaAttachmentRepository, MessageRepository messageRepository) {
+      MetaAttachmentRepository metaAttachmentRepository,
+      MessageRepository messageRepository,
+      SendMailQueueService sendMailQueueService) {
     this.metaAttachmentRepository = metaAttachmentRepository;
     this.messageRepository = messageRepository;
+    this.sendMailQueueService = sendMailQueueService;
   }
 
   @Override
@@ -90,7 +89,8 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
       Set<MetaFile> metaFiles,
       String addressBlock,
       int mediaTypeSelect,
-      EmailAccount emailAccount) {
+      EmailAccount emailAccount,
+      String signature) {
 
     emailAccount =
         emailAccount != null
@@ -114,7 +114,8 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
             bccEmailAddressList,
             addressBlock,
             mediaTypeSelect,
-            emailAccount);
+            emailAccount,
+            signature);
 
     messageRepository.save(message);
 
@@ -157,7 +158,8 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
       List<EmailAddress> bccEmailAddressList,
       String addressBlock,
       int mediaTypeSelect,
-      EmailAccount emailAccount) {
+      EmailAccount emailAccount,
+      String signature) {
 
     Set<EmailAddress> replyToEmailAddressSet = Sets.newHashSet();
     Set<EmailAddress> bccEmailAddressSet = Sets.newHashSet();
@@ -179,7 +181,9 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
       }
     }
 
-    if (emailAccount != null) {
+    if (!Strings.isNullOrEmpty(signature)) {
+      content += "<p></p><p></p>" + signature;
+    } else if (emailAccount != null) {
       content += "<p></p><p></p>" + Beans.get(MailAccountService.class).getSignature(emailAccount);
     }
 
@@ -209,7 +213,6 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
 
   public Message sendMessage(Message message) throws AxelorException {
     try {
-      message.setStatusSelect(MessageRepository.STATUS_IN_PROGRESS);
       if (message.getMediaTypeSelect() == MessageRepository.MEDIA_TYPE_MAIL) {
         return sendByMail(message);
       } else if (message.getMediaTypeSelect() == MessageRepository.MEDIA_TYPE_EMAIL) {
@@ -258,7 +261,7 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
       return message;
     }
 
-    log.debug("Sent email");
+    log.debug("Sending email...");
     MailAccountService mailAccountService = Beans.get(MailAccountService.class);
     com.axelor.mail.MailAccount account =
         new SmtpAccount(
@@ -285,14 +288,24 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
 
     mailBuilder.subject(message.getSubject());
 
-    if (message.getFromEmailAddress() != null) {
-      if (!Strings.isNullOrEmpty(message.getFromEmailAddress().getAddress())) {
-        log.debug("Override from :::  {}", this.getFullEmailAddress(message.getFromEmailAddress()));
-        mailBuilder.from(this.getFullEmailAddress(message.getFromEmailAddress()));
-      } else {
-        throw new AxelorException(
-            message, TraceBackRepository.CATEGORY_CONFIGURATION_ERROR, IExceptionMessage.MESSAGE_5);
+    if (!Strings.isNullOrEmpty(mailAccount.getFromAddress())) {
+      String fromAddress = mailAccount.getFromAddress();
+      if (!Strings.isNullOrEmpty(mailAccount.getFromName())) {
+        fromAddress =
+            String.format("%s <%s>", mailAccount.getFromName(), mailAccount.getFromAddress());
+      } else if (message.getFromEmailAddress() != null) {
+        if (!Strings.isNullOrEmpty(message.getFromEmailAddress().getAddress())) {
+          log.debug(
+              "Override from :::  {}", this.getFullEmailAddress(message.getFromEmailAddress()));
+          mailBuilder.from(this.getFullEmailAddress(message.getFromEmailAddress()));
+        } else {
+          throw new AxelorException(
+              message,
+              TraceBackRepository.CATEGORY_CONFIGURATION_ERROR,
+              IExceptionMessage.MESSAGE_5);
+        }
       }
+      mailBuilder.from(fromAddress);
     }
     if (replytoRecipients != null && !replytoRecipients.isEmpty()) {
       mailBuilder.replyTo(Joiner.on(",").join(replytoRecipients));
@@ -316,42 +329,11 @@ public class MessageServiceImpl extends JpaSupport implements MessageService {
     }
 
     getEntityManager().flush();
-
+    getEntityManager().lock(message, LockModeType.PESSIMISTIC_WRITE);
     // send email using a separate process to avoid thread blocking
-    executor.submit(
-        () -> {
-          try {
-            final Message updateMessage = findMessage(message);
-            mailBuilder.send();
-            inTransaction(
-                () -> {
-                  updateMessage.setSentByEmail(true);
-                  updateMessage.setStatusSelect(MessageRepository.STATUS_SENT);
-                  updateMessage.setSentDateT(LocalDateTime.now());
-                  updateMessage.setSenderUser(AuthUtils.getUser());
-                  messageRepository.save(updateMessage);
-                });
-          } catch (Exception e) {
-            TraceBackService.trace(e);
-          }
-          return true;
-        });
+    sendMailQueueService.submitMailJob(mailBuilder, message);
 
     return message;
-  }
-
-  private Message findMessage(Message message) throws InterruptedException, TimeoutException {
-    Message foundMessage;
-    final long startTime = System.currentTimeMillis();
-
-    while ((foundMessage = messageRepository.find(message.getId())) == null) {
-      if (System.currentTimeMillis() - startTime > ENTITY_FIND_TIMEOUT) {
-        throw new TimeoutException(String.format("Cannot find message: %s", message));
-      }
-      Thread.sleep(ENTITY_FIND_INTERVAL);
-    }
-
-    return foundMessage;
   }
 
   public Set<MetaAttachment> getMetaAttachments(Message message) {

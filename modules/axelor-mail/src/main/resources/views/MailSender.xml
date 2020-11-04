@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object-views xmlns="http://axelor.com/xml/ns/object-views"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/object-views http://axelor.com/xml/ns/object-views/object-views_5.1.xsd">
+
+  <grid name="mail-sender-grid"
+    model="com.axelor.mail.db.MailSender" title="Mail Sender">
+    <field name="reference" />
+    <field name="CC" />
+    <field name="Body" />
+  </grid>
+
+  <form model="com.axelor.mail.db.MailSender" title="Mail Sender Form"
+    name="mail-sender-form" width="large">
+    <toolbar >
+      <button name="mailCanImportBtn" title="Import List"
+        showIf="id" onClick="action-mail-view-import-sender-candidate" />
+
+      <button name="emailSendBtn" title="Email Send" showIf="id"
+        onClick="save,action-mail-method-on-click-send-email" />
+
+    </toolbar>
+
+    <panel name="overviewPanel">
+
+      <field name="reference" />
+      <field name="cc" />
+      <field name="Body" />
+
+    </panel>
+
+
+    <panel name="mailCadidatePanel">
+      <panel-related field="candidateList" colSpan="12"
+        form-view="candidate-grid"
+        grid-view="candidate-grid" />
+    </panel>
+
+
+  </form>
+
+
+  <action-view
+    name="action-mail-view-import-sender-candidate"
+    title="Import Send List" model="com.axelor.event.db.Wizards">
+    <view type="form" name="import-candidate-form" />
+    <view-param name="width" value="800" />
+    <view-param name="popup" value="true" />
+    <view-param name="show-toolbar" value="false" />
+    <view-param name="show-confirm" value="false" />
+    <view-param name="popup-save" value="false" />
+  </action-view>
+
+
+  <form name="import-candidate-form" title="Import Registration"
+    model="com.axelor.event.db.Wizards">
+    <panel name="mainPanel">
+      <field name="metaFile" title="Input file" type="many-to-one"
+        target="com.axelor.meta.db.MetaFile" widget="binary-link" />
+      <button name="importBtn" colSpan="4" title="Import"
+        readonlyIf="metaFile == null"
+        onClick="action-mail-method-on-click-import-candidate" />
+    </panel>
+  </form>
+
+
+
+  <action-method
+    name="action-mail-method-on-click-import-candidate">
+    <call class="com.axelor.mail.web.MailSenderController"
+      method="importCsvCandidate" />
+  </action-method>
+
+
+  <action-method
+    name="action-mail-method-on-click-send-email">
+    <call class="com.axelor.mail.web.MailSenderController"
+      method="emailSend" />
+  </action-method>
+
+</object-views>

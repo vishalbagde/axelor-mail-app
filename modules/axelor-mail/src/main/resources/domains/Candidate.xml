@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<domain-models
+  xmlns="http://axelor.com/xml/ns/domain-models"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/domain-models http://axelor.com/xml/ns/domain-models/domain-models_5.1.xsd">
+
+  <module package="com.axelor.mail.db" name="mail"/>
+
+  <entity name="Candidate">
+    <many-to-one name="mailSender" ref="com.axelor.mail.db.MailSender" title="MailSender"/>
+    <string name="name" title="Name"/>
+    <string name="email" title="Email" />
+    <string name="cc" title="CC" />
+    <string name="subject" title="Subject" />
+    <string name="body" title="Body" />
+    <string name="attachment" title="File" />
+    <boolean name="isEmailSend" title=" Is Email Send"/>
+  </entity>
+</domain-models>

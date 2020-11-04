@@ -44,6 +44,7 @@ dependencies {
   compile project(':modules:axelor-message')
   compile project(':modules:axelor-tool')
   compile project(':modules:axelor-exception')
+  compile project(':modules:axelor-mail')
 }
 
 wrapper {

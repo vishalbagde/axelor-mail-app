@@ -49,7 +49,6 @@ public class EventEventController {
 
     response.setNotify("Data Imported");
     response.setCanClose(true);
- 
   }
 
   public void emailSend(ActionRequest request, ActionResponse response) {

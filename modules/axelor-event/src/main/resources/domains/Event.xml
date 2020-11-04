@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<domain-models xmlns="http://axelor.com/xml/ns/domain-models"
+<domain-models
+  xmlns="http://axelor.com/xml/ns/domain-models"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://axelor.com/xml/ns/domain-models http://axelor.com/xml/ns/domain-models/domain-models_5.1.xsd">
 
   <module package="com.axelor.event.db" name="event" />
   <entity name="Event">
     <string name="reference" title="Reference" namecolumn="true" />
-    <datetime name="startDate" title="Start Date"  />
-    <datetime name="endDate" title="End Date"  />
-    <many-to-one name="venue" ref="com.axelor.event.db.Address"
-      title="Venue" />
-    <date name="regOpenDate" title="Registration Open Date"   />
-    <date name="regCloseDate" title="Registration Close Date"  />
-    <integer name="capacity" title="Capacity"/>
-    <decimal name="eventFees" title="Event Fees"/>
+    <datetime name="startDate" title="Start Date" />
+    <datetime name="endDate" title="End Date" />
+    <many-to-one name="venue"
+      ref="com.axelor.event.db.Address" title="Venue" />
+    <date name="regOpenDate" title="Registration Open Date" />
+    <date name="regCloseDate" title="Registration Close Date" />
+    <integer name="capacity" title="Capacity" />
+    <decimal name="eventFees" title="Event Fees" />
     <string name="description" large="true" title="Description" />
-    <one-to-many name="discountList" ref="com.axelor.event.db.Discount"
-      title="Discounts"/>
-    <one-to-many name="eventRegistrationList" ref="com.axelor.event.db.EventRegistration"
+    <one-to-many name="discountList"
+      ref="com.axelor.event.db.Discount" title="Discounts" />
+    <one-to-many name="eventRegistrationList"
+      ref="com.axelor.event.db.EventRegistration"
       title="Event Registrations" mappedBy="event" />
     <integer name="totalEntry" title="Total Entry" />
     <decimal name="amountCollected" title="Amount Collected" />
     <decimal name="totalDiscount" title="Total Discount" />
+
+    <many-to-one name="myFile" ref="com.axelor.meta.db.MetaFile" title="Attach File"/>
+
+
   </entity>
 </domain-models>

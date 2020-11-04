@@ -1,17 +1,24 @@
 package com.axelor.event.service;
 
+import com.axelor.apps.message.db.EmailAccount;
 import com.axelor.apps.message.db.Message;
 import com.axelor.apps.message.db.Template;
+import com.axelor.apps.message.db.repo.EmailAccountRepository;
 import com.axelor.apps.message.db.repo.TemplateRepository;
+import com.axelor.apps.message.service.MessageService;
 import com.axelor.apps.message.service.TemplateMessageService;
+import com.axelor.auth.AuthUtils;
 import com.axelor.common.FileUtils;
 import com.axelor.data.ImportTask;
 import com.axelor.data.csv.CSVImporter;
+import com.axelor.dms.db.DMSFile;
+import com.axelor.dms.db.repo.DMSFileRepository;
 import com.axelor.event.db.Discount;
 import com.axelor.event.db.Event;
 import com.axelor.event.db.EventRegistration;
 import com.axelor.event.db.repo.EventRegistrationRepository;
 import com.axelor.event.db.repo.EventRepository;
+import com.axelor.exception.AxelorException;
 import com.axelor.inject.Beans;
 import com.axelor.meta.MetaFiles;
 import com.axelor.meta.db.MetaFile;
@@ -23,14 +30,24 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EventServiceImpl implements EventService {
+
+  private final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Inject MessageService messageService;
 
   @Inject TemplateMessageService templateService;
 
@@ -175,24 +192,69 @@ public class EventServiceImpl implements EventService {
   public void sendEmail(Event event) {
 
     Template template = templateRepository.findByName("event");
+    EmailAccount emailAccount = Beans.get(EmailAccountRepository.class).all().fetchOne();
 
     if (template != null) {
       List<EventRegistration> eventRegistrationList = event.getEventRegistrationList();
       if (eventRegistrationList != null && !eventRegistrationList.isEmpty()) {
 
-        for (EventRegistration eventRegistration : eventRegistrationList) {
-          try {
-            if (eventRegistration.getEmail() != null) {
-              Message message = templateService.generateAndSendMessage(eventRegistration, template);
-              if (message != null) {
-                eventRegistration.setIsEmailSend(true);
-                eventRegistrationRepository.save(eventRegistration);
-              }
-            } else {
-              System.err.println("Email Id not found");
+        List<EventRegistration> eventRegistrations = event.getEventRegistrationList();
+        for (EventRegistration eventRegistration : eventRegistrations) {
+          if (eventRegistration.getEmail() != null) {
+            String toRecipents = eventRegistration.getEmail().toString();
+            Message message = null;
+            template.setToRecipients(toRecipents);
+            try {
+              message =
+                  templateService.generateMessage(
+                      Long.parseLong(eventRegistration.getId().toString()),
+                      "com.axelor.event.db.EventRegistration",
+                      "EventRegistration",
+                      template);
+            } catch (NumberFormatException
+                | ClassNotFoundException
+                | InstantiationException
+                | IllegalAccessException
+                | AxelorException
+                | IOException e1) {
+              // TODO Auto-generated catch block
+              e1.printStackTrace();
             }
-          } catch (Exception e) {
-            e.printStackTrace();
+            message.setSentDateT(LocalDateTime.now());
+            message.setSenderUser(AuthUtils.getUser());
+            message.setMailAccount(emailAccount);
+
+            List<DMSFile> dmfiles =
+                Beans.get(DMSFileRepository.class)
+                    .all()
+                    .filter("self.relatedId = ?", event.getId())
+                    .fetch();
+
+            Set<MetaFile> metaFiles = new HashSet<MetaFile>();
+
+            if (dmfiles != null) {
+              for (DMSFile file : dmfiles) {
+                // System.out.println(file.getFileName());
+                MetaFile metaFile = file.getMetaFile();
+                if (metaFile != null) {
+                  metaFiles.add(metaFile);
+                }
+              }
+            }
+
+            messageService.attachMetaFiles(message, metaFiles);
+
+            if (message == null) {
+              log.debug("Message Is Null ::: {}");
+
+            } else {
+              try {
+                messageService.sendMessage(message);
+              } catch (AxelorException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+              }
+            }
           }
         }
       }

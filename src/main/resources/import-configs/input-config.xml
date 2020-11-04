@@ -3,14 +3,21 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://axelor.com/xml/ns/data-import http://axelor.com/xml/ns/data-import/data-import_5.0.xsd">
 
-  <adapter name="LocalDate" type="com.axelor.data.adapter.JavaTimeAdapter">
+  <adapter name="LocalDate"
+    type="com.axelor.data.adapter.JavaTimeAdapter">
     <option name="type" value="LocalDate" />
     <option name="format" value="dd/MM/yyyy" />
   </adapter>
 
-  <input file="[event_registration]" type="com.axelor.event.db.EventRegistration"
-    separator=";" call="com.axelor.event.service.EventCSVImportServiceImpl:importRegistrationData">
+  <input file="[event_registration]"
+    type="com.axelor.event.db.EventRegistration" separator=";"
+    call="com.axelor.event.service.EventCSVImportServiceImpl:importRegistrationData">
     <bind column="regDate" to="regDate" adapter="LocalDate"></bind>
+  </input>
+
+  <input file="[candidate_registration]"
+    type="com.axelor.mail.db.Candidate" separator="," call="com.axelor.mail.service.SenderCSVImportServiceImpl:importRegistrationData">
+
   </input>
 
 </csv-inputs>

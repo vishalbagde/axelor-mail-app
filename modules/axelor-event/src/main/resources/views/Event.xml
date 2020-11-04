@@ -3,7 +3,8 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://axelor.com/xml/ns/object-views http://axelor.com/xml/ns/object-views/object-views_5.1.xsd">
 
-  <grid name="event-grid" model="com.axelor.event.db.Event" title="Event">
+  <grid name="event-grid" model="com.axelor.event.db.Event"
+    title="Event">
     <field name="reference" />
     <field name="startDate" />
     <field name="endDate" />
@@ -18,8 +19,9 @@
     <field name="totalDiscount" />
   </grid>
 
-  <form model="com.axelor.event.db.Event" title="Event" name="event-form"
-    width="large" onLoad="action-event-method-on-change-verify-event,save">
+  <form model="com.axelor.event.db.Event" title="Event"
+    name="event-form" width="large"
+    onLoad="action-event-method-on-change-verify-event,save">
     <toolbar>
       <button name="eventRegImportBtn" title="Import registration"
         showIf="id" onClick="action-event-view-import-event-registration" />
@@ -31,26 +33,40 @@
         onClick="action-event-report-on-click-generate-report" />
 
     </toolbar>
+
+    <panel colSpan="4">
+        <field name="myFile" widget="Image" showTitle="false"></field>
+      </panel>
+
+
     <panel name="overviewPanel">
+
       <field name="reference" />
       <field name="venue" />
-      <field name="startDate" onChange="action-event-condition-on-change-check-date" />
-      <field name="endDate" onChange="action-event-condition-on-change-check-date" />
-      <field name="regOpenDate" onChange="action-event-condition-on-change-check-date" />
-      <field name="regCloseDate" onChange="action-event-condition-on-change-check-date" />
+      <field name="startDate"
+        onChange="action-event-condition-on-change-check-date" />
+      <field name="endDate"
+        onChange="action-event-condition-on-change-check-date" />
+      <field name="regOpenDate"
+        onChange="action-event-condition-on-change-check-date" />
+      <field name="regCloseDate"
+        onChange="action-event-condition-on-change-check-date" />
       <field name="capacity" />
-      <field name="eventFees" onChange="action-event-method-on-change-verify-event" />
+      <field name="eventFees"
+        onChange="action-event-method-on-change-verify-event" />
     </panel>
 
     <panel name="discountPanel">
-      <panel-related field="discountList" form-view="discount-form"
-        grid-view="discount-grid" colSpan="12" />
+      <panel-related field="discountList"
+        form-view="discount-form" grid-view="discount-grid" colSpan="12" />
     </panel>
 
     <panel name="eventRegPenel">
-      <panel-related field="eventRegistrationList" colSpan="12"
-        canNew="capacity > totalEntry" form-view="event-registration-form"
-        grid-view="event-registration-event-grid" onChange="action-event-method-on-change-compute-event-total" />
+      <panel-related field="eventRegistrationList"
+        colSpan="12" canNew="capacity > totalEntry"
+        form-view="event-registration-form"
+        grid-view="event-registration-event-grid"
+        onChange="action-event-method-on-change-compute-event-total" />
     </panel>
 
     <panel name="descPanel" colSpan="12">
@@ -65,8 +81,8 @@
     </panel>
   </form>
 
-  <cards name="event-card" model="com.axelor.event.db.Event" title="Event"
-    width="400px">
+  <cards name="event-card" model="com.axelor.event.db.Event"
+    title="Event" width="400px">
     <field name="reference" />
     <field name="startDate" />
     <field name="endDate" />
@@ -99,8 +115,8 @@
   </cards>
 
   <calendar name="event-calendar" title="Event"
-    model="com.axelor.event.db.Event" colorBy="reference" eventStart="startDate"
-    eventStop="endDate" eventLength="1">
+    model="com.axelor.event.db.Event" colorBy="reference"
+    eventStart="startDate" eventStop="endDate" eventLength="1">
     <field name="reference" />
     <field name="venue" />
   </calendar>
@@ -111,11 +127,13 @@
       <field name="metaFile" title="Input file" type="many-to-one"
         target="com.axelor.meta.db.MetaFile" widget="binary-link" />
       <button name="importBtn" colSpan="4" title="Import"
-        readonlyIf="metaFile == null" onClick="action-event-method-on-click-import-registration" />
+        readonlyIf="metaFile == null"
+        onClick="action-event-method-on-click-import-registration" />
     </panel>
   </form>
 
-  <action-view name="action-event-view-import-event-registration"
+  <action-view
+    name="action-event-view-import-event-registration"
     title="Import Registration" model="com.axelor.event.db.Wizards">
     <view type="form" name="import-registration-form" />
     <view-param name="width" value="800" />
@@ -124,11 +142,14 @@
     <view-param name="show-confirm" value="false" />
     <view-param name="popup-save" value="false" />
   </action-view>
-  <action-method name="action-event-method-on-click-import-registration">
-    <call class="com.axelor.event.web.EventEventController" method="importCsvEventRegistration" />
+  <action-method
+    name="action-event-method-on-click-import-registration">
+    <call class="com.axelor.event.web.EventEventController"
+      method="importCsvEventRegistration" />
   </action-method>
 
-  <action-condition name="action-event-condition-on-change-check-date">
+  <action-condition
+    name="action-event-condition-on-change-check-date">
 
     <check field="startDate"
       if="startDate == null || endDate !=null &amp;&amp; startDate &gt; endDate"
@@ -147,20 +168,27 @@
       error="Registration Close Date should After End Date or not Before Reg Start Date" />
   </action-condition>
 
-  <action-method name="action-event-method-on-change-compute-event-total">
-    <call class="com.axelor.event.web.EventEventController" method="computeTotal" />
+  <action-method
+    name="action-event-method-on-change-compute-event-total">
+    <call class="com.axelor.event.web.EventEventController"
+      method="computeTotal" />
   </action-method>
 
-  <action-method name="action-event-method-on-change-verify-event">
-    <call class="com.axelor.event.web.EventEventController" method="verifyEvent" />
+  <action-method
+    name="action-event-method-on-change-verify-event">
+    <call class="com.axelor.event.web.EventEventController"
+      method="verifyEvent" />
   </action-method>
 
-  <action-method name="action-event-method-on-click-send-email">
-    <call class="com.axelor.event.web.EventEventController" method="emailSend" />
+  <action-method
+    name="action-event-method-on-click-send-email">
+    <call class="com.axelor.event.web.EventEventController"
+      method="emailSend" />
   </action-method>
 
   <action-report output="${date}${time}"
-    name="action-event-report-on-click-generate-report" design="event_report.rptdesign">
+    name="action-event-report-on-click-generate-report"
+    design="event_report.rptdesign">
     <param name="eventId" expr="eval: id" />
   </action-report>
 
